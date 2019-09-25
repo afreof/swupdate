@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Override these variables in sourced script(s) located
+# in /usr/lib/swupdate.d or /etc/swupdate.d
+SWUPDATE_ARGS="-v ${SWUPDATE_EXTRA_ARGS}"
+SWUPDATE_WEBSERVER_ARGS=""
+SWUPDATE_DOWNLOAD_ARGS=""
+
+# source all files from /etc/swupdate.d and /usr/lib/swupdate.d/
+# A file found in /etc replaces the same file in /usr
+for f in `(test -d /usr/lib/swupdate.d/ && ls -1 /usr/lib/swupdate.d/; test -d /etc/swupdate.d && ls -1 /etc/swupdate.d) | sort -u`; do
+  if [ -f /etc/swupdate.d/$f ]; then
+    . /etc/swupdate.d/$f
+  else
+    . /usr/lib/swupdate.d/$f
+  fi
+done
+
+#  handle variable escaping in a simmple way...
+if [ "$SWUPDATE_WEBSERVER_ARGS" != "" -a  "$SWUPDATE_DOWNLOAD_ARGS" != "" ]; then
+  /usr/bin/swupdate $SWUPDATE_ARGS -w "$SWUPDATE_WEBSERVER_ARGS" -u "$SWUPDATE_DOWNLOAD_ARGS"
+elif [ "$SWUPDATE_WEBSERVER_ARGS" != "" ]; then
+  /usr/bin/swupdate $SWUPDATE_ARGS -w "$SWUPDATE_WEBSERVER_ARGS"
+elif [ "$SWUPDATE_DOWNLOAD_ARGS" != "" ]; then
+  /usr/bin/swupdate $SWUPDATE_ARGS -d "$SWUPDATE_DOWNLOAD_ARGS"
+else
+  /usr/bin/swupdate $SWUPDATE_ARGS
+fi

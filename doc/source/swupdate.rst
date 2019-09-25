@@ -520,56 +520,26 @@ configuration switch ``CONFIG_SYSTEMD``. If enabled, SWUpdate
 signals systemd about start-up completion and can make optional
 use of systemd's socket-based activation feature.
 
-A sample systemd service unit file ``/etc/systemd/system/swupdate.service``
-may look like the following starting SWUpdate in suricatta daemon mode:
+To install a generic set of service and socket files, pass the
+`SYSTEMD_SYSTEM_UNITDIR` parameter, which points to `/lib/systed/system`
+for example, to the "make install" command.
 
-::
+For further runtime adjustments, some shell code snippets can be added
+to the `/usr/lib/swupdate.d` or `/etc/swupdate.d` folders. The
+code snippets are processed by a full-featured shell in alphabetical order.
+Files from /etc overwrite files from /usr/ with the same name.
 
-	[Unit]
-	Description=SWUpdate daemon
-	Documentation=https://github.com/sbabic/swupdate
-	Documentation=https://sbabic.github.io/swupdate
+The purpose of these code snippets is to assign reasonable command line
+parameters to swupdate. The following variables may be set:
 
-	[Service]
-	Type=notify
-	ExecStart=/usr/bin/swupdate -u '-t default -u http://localhost -i 25'
+- SWUPDATE_ARGS
+- SWUPDATE_WEBSERVER_ARGS
+- SWUPDATE_DOWNLOAD_ARGS
 
-	[Install]
-	WantedBy=multi-user.target
+After processing all code snippets from the two folders swupdate
+gets started through:
 
-Started via ``systemctl start swupdate.service``, SWUpdate
-(re)creates its sockets on startup. For using socket-based
-activation, an accompanying systemd socket unit file
-``/etc/systemd/system/swupdate.socket`` is required:
-
-::
-
-	[Unit]
-	Description=SWUpdate socket listener
-	Documentation=https://github.com/sbabic/swupdate
-	Documentation=https://sbabic.github.io/swupdate
-
-	[Socket]
-	ListenStream=/tmp/sockinstctrl
-	ListenStream=/tmp/swupdateprog
-
-	[Install]
-	WantedBy=sockets.target
-
-On ``swupdate.socket`` being started, systemd creates the socket
-files and hands them over to SWUpdate when it starts. So, for
-example, when talking to ``/tmp/swupdateprog``, systemd starts
-``swupdate.service`` and hands-over the socket files. The socket
-files are also handed over on a "regular" start of SWUpdate via
-``systemctl start swupdate.service``.
-
-Note that the socket paths in the two ``ListenStream=`` directives
-have to match the socket paths ``CONFIG_SOCKET_CTRL_PATH`` and 
-``CONFIG_SOCKET_PROGRESS_PATH`` in SWUpdate's configuration.
-Here, the default socket path configuration is depicted.
-
-.. _systemd: https://www.freedesktop.org/wiki/Software/systemd/
-
+    swupdate $SWUPDATE_ARGS -w "$SWUPDATE_WEBSERVER_ARGS" -u "$SWUPDATE_DOWNLOAD_ARGS"
 
 Changes in boot-loader code
 ===========================
